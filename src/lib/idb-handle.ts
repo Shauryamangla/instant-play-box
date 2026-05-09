@@ -63,8 +63,8 @@ export async function listVideoFiles(
   prefix = ""
 ): Promise<{ name: string; path: string; file: File }[]> {
   const out: { name: string; path: string; file: File }[] = [];
-  // async iterator on directory handles (FileSystem Access API)
-  for await (const [name, entry] of (handle as unknown as AsyncIterable<[string, FileSystemHandle]>)) {
+  const entries = (handle as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries();
+  for await (const [name, entry] of entries) {
     const path = prefix ? `${prefix}/${name}` : name;
     if (entry.kind === "file" && VIDEO_EXT.test(name)) {
       const file = await (entry as FileSystemFileHandle).getFile();
