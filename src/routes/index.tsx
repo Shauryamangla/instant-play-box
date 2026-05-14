@@ -6,6 +6,9 @@ import { SourceBar } from "@/components/pioneer/SourceBar";
 import { HomeScreen } from "@/components/pioneer/HomeScreen";
 import { PlayerScreen } from "@/components/pioneer/PlayerScreen";
 import { SettingsScreen } from "@/components/pioneer/SettingsScreen";
+import { NavScreen } from "@/components/pioneer/NavScreen";
+import { LibraryScreen } from "@/components/pioneer/LibraryScreen";
+import { PersistentVideo } from "@/components/pioneer/PersistentVideo";
 import type { Screen } from "@/components/pioneer/screens";
 
 export const Route = createFileRoute("/")({
@@ -52,14 +55,16 @@ function Shell() {
       <main className="min-h-0 flex-1">
         {screen === "home" && <HomeScreen onOpen={setScreen} />}
         {screen === "video" && <PlayerScreen />}
-        {screen === "music" && <PlayerScreen />}
+        {screen === "music" && <LibraryScreen onOpen={setScreen} />}
         {screen === "audio" && <SettingsScreen initialTab="audio" />}
         {screen === "settings" && <SettingsScreen initialTab="system" />}
-        {(screen === "radio" || screen === "phone" || screen === "nav") && (
+        {screen === "nav" && <NavScreen />}
+        {(screen === "radio" || screen === "phone") && (
           <SourcePlaceholder name={screen} />
         )}
       </main>
       <SourceBar current={screen} onChange={setScreen} />
+      <PersistentVideo />
     </div>
   );
 }

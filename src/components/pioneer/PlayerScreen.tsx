@@ -1,8 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Play, Pause, SkipBack, SkipForward, Repeat, Repeat1, Shuffle, FolderOpen, List } from "lucide-react";
 import { usePioneer } from "@/lib/pioneer-store";
-import { attachEq, EQ_BANDS } from "@/lib/eq";
-import { useState } from "react";
 
 export function PlayerScreen() {
   const {
@@ -17,105 +15,37 @@ export function PlayerScreen() {
     videoRef,
     currentIndex,
     setCurrentIndex,
+    setVideoSlot,
   } = usePioneer();
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState({ t: 0, d: 0 });
-  const [showList, setShowList] = useState(false);
-  const eqAttached = useRef(false);
+  const slotRef = useRef<HTMLDivElement | null>(null);
 
-  // Wire EQ + persist resume + autoplay
+  // Hand the slot element to the persistent video overlay.
+  useEffect(() => {
+    setVideoSlot(slotRef.current);
+    return () => setVideoSlot(null);
+  }, [setVideoSlot]);
+
+  // Drive UI state from the shared video element.
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (!eqAttached.current) {
-      try {
-        attachEq(v);
-        eqAttached.current = true;
-      } catch {
-        // ignore (user gesture required on first attach)
-      }
-    }
     const onPlay = () => setPlaying(true);
     const onPause = () => setPlaying(false);
-    const onTime = () => {
+    const onTime = () =>
       setProgress({ t: v.currentTime, d: v.duration || 0 });
-      if (current) {
-        set("resume", { path: current.path, time: v.currentTime });
-      }
-    };
-    const onEnded = () => {
-      if (state.playback.repeat === "one") {
-        v.currentTime = 0;
-        v.play();
-      } else {
-        next();
-      }
-    };
+    setPlaying(!v.paused);
+    setProgress({ t: v.currentTime, d: v.duration || 0 });
     v.addEventListener("play", onPlay);
     v.addEventListener("pause", onPause);
     v.addEventListener("timeupdate", onTime);
-    v.addEventListener("ended", onEnded);
     return () => {
       v.removeEventListener("play", onPlay);
       v.removeEventListener("pause", onPause);
       v.removeEventListener("timeupdate", onTime);
-      v.removeEventListener("ended", onEnded);
     };
-  }, [current, next, set, state.playback.repeat, videoRef]);
-
-  // Autoplay + resume position when track changes
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v || !current) return;
-    const shouldResume =
-      state.playback.resumeOnBoot &&
-      state.resume.path === current.path &&
-      state.resume.time > 0;
-    if (shouldResume) {
-      const onLoaded = () => {
-        v.currentTime = state.resume.time;
-        v.removeEventListener("loadedmetadata", onLoaded);
-      };
-      v.addEventListener("loadedmetadata", onLoaded);
-    }
-    if (state.playback.autoplay) {
-      v.play().catch(() => {
-        // muted autoplay fallback
-        v.muted = true;
-        v.play().catch(() => undefined);
-      });
-    }
-    // Try to resume the AudioContext (suspended without gesture)
-    try {
-      attachEq(v).ctx.resume();
-    } catch {
-      /* ignore */
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current?.url]);
-
-  // Apply EQ / audio config to graph
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v || !eqAttached.current) return;
-    const g = attachEq(v);
-    state.audio.eq.forEach((db, i) => {
-      if (g.filters[i]) g.filters[i].gain.value = db;
-    });
-    g.balance.pan.value = state.audio.balance;
-    g.gain.gain.value = state.audio.volume;
-    g.sub.type = state.audio.subOn ? "lowpass" : "allpass";
-    g.sub.frequency.value = state.audio.crossover;
-    v.volume = 1;
-  }, [state.audio, videoRef]);
-
-  const filter = `brightness(${state.video.brightness}) contrast(${state.video.contrast}) saturate(${state.video.saturation}) hue-rotate(${state.video.hue}deg)`;
-  const objectFit =
-    state.video.aspect === "fill"
-      ? "cover"
-      : state.video.aspect === "stretch"
-        ? "fill"
-        : "contain";
+  }, [videoRef, current?.url]);
 
   const fmt = (s: number) => {
     if (!isFinite(s)) return "0:00";
@@ -127,21 +57,12 @@ export function PlayerScreen() {
   return (
     <div className="grid h-full grid-cols-[1fr_280px] gap-3 p-3">
       <div className="flex flex-col rounded-xl border border-border bg-black">
-        <div className="relative flex-1 overflow-hidden rounded-t-xl">
-          {current ? (
-            <video
-              ref={videoRef}
-              src={current.url}
-              className="h-full w-full"
-              style={{ filter, objectFit }}
-              playsInline
-              onClick={() => {
-                const v = videoRef.current!;
-                v.paused ? v.play() : v.pause();
-              }}
-            />
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
+        <div
+          ref={slotRef}
+          className="relative flex-1 overflow-hidden rounded-t-xl"
+        >
+          {!current && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-muted-foreground">
               <FolderOpen className="h-12 w-12 text-primary" />
               <div>{hasFolder ? "No videos in folder" : "No folder selected"}</div>
               <button
@@ -219,8 +140,9 @@ export function PlayerScreen() {
                 )}
               </button>
               <button
-                onClick={() => setShowList((s) => !s)}
+                onClick={pickFolder}
                 className="rounded-md p-2 hover:bg-secondary"
+                title="Library"
               >
                 <List className="h-5 w-5" />
               </button>
@@ -261,7 +183,6 @@ export function PlayerScreen() {
           )}
         </div>
       </div>
-      {showList && null}
     </div>
   );
 }
