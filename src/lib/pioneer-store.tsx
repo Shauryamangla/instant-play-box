@@ -116,6 +116,8 @@ interface Ctx {
   next: () => void;
   prev: () => void;
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  videoSlot: HTMLElement | null;
+  setVideoSlot: (el: HTMLElement | null) => void;
 }
 
 const PioneerCtx = createContext<Ctx | null>(null);
@@ -127,6 +129,7 @@ export function PioneerProvider({ children }: { children: React.ReactNode }) {
   const [hasFolder, setHasFolder] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [videoSlot, setVideoSlot] = useState<HTMLElement | null>(null);
 
   // hydrate
   useEffect(() => {
@@ -258,8 +261,10 @@ export function PioneerProvider({ children }: { children: React.ReactNode }) {
       next,
       prev,
       videoRef,
+      videoSlot,
+      setVideoSlot,
     }),
-    [state, tracks, loadingTracks, hasFolder, currentIndex, current]
+    [state, tracks, loadingTracks, hasFolder, currentIndex, current, videoSlot]
   );
 
   return <PioneerCtx.Provider value={value}>{children}</PioneerCtx.Provider>;
