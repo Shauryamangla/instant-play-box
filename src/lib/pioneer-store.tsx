@@ -25,6 +25,42 @@ export interface AudioCfg {
   crossover: number; // Hz 50..200
   volume: number; // 0..1
   preset: string;
+  // Tone control
+  bass: number; // -6..+6 dB
+  treble: number; // -6..+6 dB
+  bassBoost: number; // 0..6
+  loudness: "off" | "low" | "mid" | "high";
+  // High Pass Filter — Front / Rear
+  hpfFrontOn: boolean;
+  hpfFrontFreq: number; // 50..200 Hz
+  hpfFrontSlope: -6 | -12 | -18 | -24; // dB/oct
+  hpfRearOn: boolean;
+  hpfRearFreq: number;
+  hpfRearSlope: -6 | -12 | -18 | -24;
+  // Subwoofer LPF + phase
+  subLpfFreq: number; // 50..200 Hz
+  subLpfSlope: -6 | -12 | -18 | -24;
+  subPhase: "normal" | "reverse";
+  // Speaker levels (-24..+10 dB)
+  spkFL: number;
+  spkFR: number;
+  spkRL: number;
+  spkRR: number;
+  spkSW: number;
+  // Time alignment per speaker (cm, 0..500)
+  taFL: number;
+  taFR: number;
+  taRL: number;
+  taRR: number;
+  taSW: number;
+  taOn: boolean;
+  listenPosition: "off" | "front-left" | "front-right" | "front" | "all";
+  // Enhancers
+  soundRetriever: "off" | "low" | "high";
+  alc: boolean; // Auto Level Control
+  sla: number; // Source Level Adjuster -8..+8 dB
+  muteLevel: number; // 0..1 (attenuation when muted/nav)
+  beep: boolean;
 }
 export interface VideoCfg {
   brightness: number; // 0..2
@@ -68,6 +104,36 @@ const DEFAULT_STATE: PioneerState = {
     crossover: 80,
     volume: 0.8,
     preset: "Flat",
+    bass: 0,
+    treble: 0,
+    bassBoost: 0,
+    loudness: "off",
+    hpfFrontOn: false,
+    hpfFrontFreq: 80,
+    hpfFrontSlope: -12,
+    hpfRearOn: false,
+    hpfRearFreq: 80,
+    hpfRearSlope: -12,
+    subLpfFreq: 80,
+    subLpfSlope: -12,
+    subPhase: "normal",
+    spkFL: 0,
+    spkFR: 0,
+    spkRL: 0,
+    spkRR: 0,
+    spkSW: 0,
+    taFL: 0,
+    taFR: 0,
+    taRL: 0,
+    taRR: 0,
+    taSW: 0,
+    taOn: false,
+    listenPosition: "off",
+    soundRetriever: "off",
+    alc: false,
+    sla: 0,
+    muteLevel: 0.2,
+    beep: true,
   },
   video: { brightness: 1, contrast: 1, saturation: 1, hue: 0, aspect: "fit" },
   system: {
