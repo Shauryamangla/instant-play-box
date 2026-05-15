@@ -157,7 +157,7 @@ function AudioPanel() {
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="mb-3 text-xs uppercase tracking-widest text-primary">
-            Subwoofer / Crossover
+            Subwoofer / LPF
           </div>
           <Row label="Subwoofer">
             <Toggle
@@ -175,18 +175,219 @@ function AudioPanel() {
               onChange={(e) => set("audio", { subLevel: Number(e.target.value) })}
             />
           </Row>
-          <Row label={`Crossover (${a.crossover} Hz)`}>
+          <Row label={`LPF Cutoff (${a.subLpfFreq} Hz)`}>
             <input
               type="range"
               min={50}
               max={200}
               step={5}
-              value={a.crossover}
-              onChange={(e) => set("audio", { crossover: Number(e.target.value) })}
+              value={a.subLpfFreq}
+              onChange={(e) => set("audio", { subLpfFreq: Number(e.target.value), crossover: Number(e.target.value) })}
             />
+          </Row>
+          <Row label="LPF Slope">
+            <SlopeSelect value={a.subLpfSlope} onChange={(v) => set("audio", { subLpfSlope: v })} />
+          </Row>
+          <Row label="Sub Phase">
+            <Toggle value={a.subPhase === "reverse"}
+              onChange={(v) => set("audio", { subPhase: v ? "reverse" : "normal" })}
+              labels={["Normal", "Reverse"]} />
           </Row>
         </div>
       </div>
+
+      {/* Tone & Enhancers */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="mb-3 text-xs uppercase tracking-widest text-primary">Tone Control</div>
+          <Row label={`Bass (${a.bass > 0 ? "+" : ""}${a.bass} dB)`}>
+            <input type="range" min={-6} max={6} step={1} value={a.bass}
+              onChange={(e) => set("audio", { bass: Number(e.target.value) })} />
+          </Row>
+          <Row label={`Treble (${a.treble > 0 ? "+" : ""}${a.treble} dB)`}>
+            <input type="range" min={-6} max={6} step={1} value={a.treble}
+              onChange={(e) => set("audio", { treble: Number(e.target.value) })} />
+          </Row>
+          <Row label={`Bass Boost (+${a.bassBoost})`}>
+            <input type="range" min={0} max={6} step={1} value={a.bassBoost}
+              onChange={(e) => set("audio", { bassBoost: Number(e.target.value) })} />
+          </Row>
+          <Row label="Loudness">
+            <Segmented
+              value={a.loudness}
+              options={["off", "low", "mid", "high"]}
+              onChange={(v) => set("audio", { loudness: v as typeof a.loudness })}
+            />
+          </Row>
+        </div>
+
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="mb-3 text-xs uppercase tracking-widest text-primary">Sound Enhancers</div>
+          <Row label="Sound Retriever">
+            <Segmented
+              value={a.soundRetriever}
+              options={["off", "low", "high"]}
+              onChange={(v) => set("audio", { soundRetriever: v as typeof a.soundRetriever })}
+            />
+          </Row>
+          <Row label="Auto Level Control (ALC)">
+            <Toggle value={a.alc} onChange={(v) => set("audio", { alc: v })} />
+          </Row>
+          <Row label={`Source Level Adj. (${a.sla > 0 ? "+" : ""}${a.sla} dB)`}>
+            <input type="range" min={-8} max={8} step={1} value={a.sla}
+              onChange={(e) => set("audio", { sla: Number(e.target.value) })} />
+          </Row>
+          <Row label={`Mute / Nav Attenuate (${Math.round(a.muteLevel * 100)}%)`}>
+            <input type="range" min={0} max={1} step={0.05} value={a.muteLevel}
+              onChange={(e) => set("audio", { muteLevel: Number(e.target.value) })} />
+          </Row>
+          <Row label="Beep Tone">
+            <Toggle value={a.beep} onChange={(v) => set("audio", { beep: v })} />
+          </Row>
+        </div>
+      </div>
+
+      {/* Crossover Network */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="mb-3 text-xs uppercase tracking-widest text-primary">HPF — Front</div>
+          <Row label="Enabled">
+            <Toggle value={a.hpfFrontOn} onChange={(v) => set("audio", { hpfFrontOn: v })} />
+          </Row>
+          <Row label={`Cutoff (${a.hpfFrontFreq} Hz)`}>
+            <input type="range" min={50} max={200} step={5} value={a.hpfFrontFreq}
+              onChange={(e) => set("audio", { hpfFrontFreq: Number(e.target.value) })} />
+          </Row>
+          <Row label="Slope">
+            <SlopeSelect value={a.hpfFrontSlope} onChange={(v) => set("audio", { hpfFrontSlope: v })} />
+          </Row>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="mb-3 text-xs uppercase tracking-widest text-primary">HPF — Rear</div>
+          <Row label="Enabled">
+            <Toggle value={a.hpfRearOn} onChange={(v) => set("audio", { hpfRearOn: v })} />
+          </Row>
+          <Row label={`Cutoff (${a.hpfRearFreq} Hz)`}>
+            <input type="range" min={50} max={200} step={5} value={a.hpfRearFreq}
+              onChange={(e) => set("audio", { hpfRearFreq: Number(e.target.value) })} />
+          </Row>
+          <Row label="Slope">
+            <SlopeSelect value={a.hpfRearSlope} onChange={(v) => set("audio", { hpfRearSlope: v })} />
+          </Row>
+        </div>
+      </div>
+
+      {/* Speaker Levels */}
+      <div className="rounded-xl border border-border bg-card p-4">
+        <div className="mb-3 text-xs uppercase tracking-widest text-primary">
+          Speaker Levels (-24..+10 dB)
+        </div>
+        <div className="grid grid-cols-5 gap-3">
+          {([
+            ["FL", "spkFL"], ["FR", "spkFR"], ["RL", "spkRL"], ["RR", "spkRR"], ["SW", "spkSW"],
+          ] as const).map(([lbl, key]) => (
+            <div key={key} className="flex flex-col items-center gap-1">
+              <span className="text-[10px] uppercase text-muted-foreground">{lbl}</span>
+              <span className="text-xs tabular-nums text-foreground">
+                {(a[key] as number) > 0 ? "+" : ""}{a[key]}
+              </span>
+              <input
+                type="range" min={-24} max={10} step={1}
+                value={a[key] as number}
+                onChange={(e) => set("audio", { [key]: Number(e.target.value) } as Partial<typeof a>)}
+                className="h-28"
+                style={{ writingMode: "vertical-lr" as const, direction: "rtl" }}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Time Alignment */}
+      <div className="rounded-xl border border-border bg-card p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="text-xs uppercase tracking-widest text-primary">
+            Time Alignment (cm) — distance from listening position
+          </div>
+          <Toggle value={a.taOn} onChange={(v) => set("audio", { taOn: v })} />
+        </div>
+        <Row label="Listening Position">
+          <Segmented
+            value={a.listenPosition}
+            options={["off", "front-left", "front-right", "front", "all"]}
+            onChange={(v) => set("audio", { listenPosition: v as typeof a.listenPosition })}
+          />
+        </Row>
+        <div className="mt-3 grid grid-cols-5 gap-3">
+          {([
+            ["FL", "taFL"], ["FR", "taFR"], ["RL", "taRL"], ["RR", "taRR"], ["SW", "taSW"],
+          ] as const).map(([lbl, key]) => (
+            <div key={key} className="flex flex-col items-center gap-1">
+              <span className="text-[10px] uppercase text-muted-foreground">{lbl}</span>
+              <span className="text-xs tabular-nums text-foreground">{a[key]} cm</span>
+              <input
+                type="range" min={0} max={500} step={1}
+                value={a[key] as number}
+                onChange={(e) => set("audio", { [key]: Number(e.target.value) } as Partial<typeof a>)}
+                disabled={!a.taOn}
+                className="w-full"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <button
+        onClick={() => set("audio", {
+          eq: PRESETS.Flat, preset: "Flat", bass: 0, treble: 0, bassBoost: 0, loudness: "off",
+          fader: 0, balance: 0, subLevel: 0.5, subLpfFreq: 80, subLpfSlope: -12, subPhase: "normal",
+          hpfFrontOn: false, hpfFrontFreq: 80, hpfFrontSlope: -12,
+          hpfRearOn: false, hpfRearFreq: 80, hpfRearSlope: -12,
+          spkFL: 0, spkFR: 0, spkRL: 0, spkRR: 0, spkSW: 0,
+          taFL: 0, taFR: 0, taRL: 0, taRR: 0, taSW: 0, taOn: false, listenPosition: "off",
+          soundRetriever: "off", alc: false, sla: 0,
+        })}
+        className="rounded-md border border-border bg-secondary px-3 py-1.5 text-xs uppercase tracking-wider"
+      >
+        Reset Audio
+      </button>
+    </div>
+  );
+}
+
+function SlopeSelect({
+  value, onChange,
+}: { value: -6 | -12 | -18 | -24; onChange: (v: -6 | -12 | -18 | -24) => void }) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(Number(e.target.value) as -6 | -12 | -18 | -24)}
+      className="rounded-md border border-border bg-secondary px-2 py-1 text-sm"
+    >
+      {SLOPES.map((s) => (
+        <option key={s} value={s}>{s} dB/oct</option>
+      ))}
+    </select>
+  );
+}
+
+function Segmented({
+  value, options, onChange,
+}: { value: string; options: string[]; onChange: (v: string) => void }) {
+  return (
+    <div className="flex overflow-hidden rounded-md border border-border bg-secondary">
+      {options.map((o) => (
+        <button
+          key={o}
+          onClick={() => onChange(o)}
+          className={cn(
+            "px-2 py-1 text-[10px] font-bold uppercase tracking-wider",
+            value === o ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+          )}
+        >
+          {o}
+        </button>
+      ))}
     </div>
   );
 }
