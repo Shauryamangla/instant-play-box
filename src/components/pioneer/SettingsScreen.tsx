@@ -16,6 +16,8 @@ const PRESETS: Record<string, number[]> = {
   Vivid: [3, 2, 1, 0, -1, 0, 1, 2, 3, 4, 4, 3, 2],
 };
 
+const SLOPES = [-6, -12, -18, -24] as const;
+
 const WALLPAPERS: Record<string, string> = {
   aurora: "radial-gradient(ellipse at top, oklch(0.35 0.12 230 / 0.6), transparent 60%), linear-gradient(180deg, oklch(0.16 0.02 250), oklch(0.1 0.02 260))",
   carbon: "repeating-linear-gradient(45deg, oklch(0.18 0.02 260) 0 6px, oklch(0.16 0.02 260) 6px 12px)",
