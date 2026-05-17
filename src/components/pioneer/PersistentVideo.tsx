@@ -41,6 +41,8 @@ export function PersistentVideo() {
       if (current) set("resume", { path: current.path, time: v.currentTime });
     };
     const onEnded = () => {
+      // Track finished — clear resume so next boot starts fresh on the next track.
+      set("resume", { path: null, time: 0 });
       if (state.playback.repeat === "one") {
         v.currentTime = 0;
         v.play();
@@ -48,11 +50,32 @@ export function PersistentVideo() {
         next();
       }
     };
+    const onPause = () => {
+      if (current && v.currentTime > 0) {
+        set("resume", { path: current.path, time: v.currentTime });
+      }
+    };
+    const saveNow = () => {
+      if (current && v.currentTime > 0) {
+        set("resume", { path: current.path, time: v.currentTime });
+      }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") saveNow();
+    };
     v.addEventListener("timeupdate", onTime);
     v.addEventListener("ended", onEnded);
+    v.addEventListener("pause", onPause);
+    window.addEventListener("pagehide", saveNow);
+    window.addEventListener("beforeunload", saveNow);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       v.removeEventListener("timeupdate", onTime);
       v.removeEventListener("ended", onEnded);
+      v.removeEventListener("pause", onPause);
+      window.removeEventListener("pagehide", saveNow);
+      window.removeEventListener("beforeunload", saveNow);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [current, next, set, state.playback.repeat, videoRef]);
 
