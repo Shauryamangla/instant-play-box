@@ -123,8 +123,9 @@ export function PersistentVideo() {
     });
     g.balance.pan.value = state.audio.balance;
     g.gain.gain.value = state.audio.volume;
-    g.sub.type = state.audio.subOn ? "lowpass" : "allpass";
-    g.sub.frequency.value = state.audio.crossover;
+    // Sub branch is parallel — gain 0 when off (subwoofer silent), subLevel when on.
+    g.sub.frequency.value = state.audio.subLpfFreq || state.audio.crossover;
+    g.subGain.gain.value = state.audio.subOn ? state.audio.subLevel : 0;
     v.volume = 1;
   }, [state.audio, videoRef]);
 

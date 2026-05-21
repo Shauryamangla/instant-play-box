@@ -14,7 +14,13 @@ import {
   saveDirHandle,
 } from "./idb-handle";
 
-export type Track = { name: string; path: string; file: File; url: string };
+export type Track = {
+  name: string;
+  path: string;
+  file: File;
+  url: string;
+  kind: "audio" | "video";
+};
 
 export interface AudioCfg {
   eq: number[]; // dB per band, length 13
@@ -244,11 +250,18 @@ export function PioneerProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         const list = files.map((f) => ({ ...f, url: URL.createObjectURL(f.file) }));
         setTracks(list);
-        // resume index from saved path
-        const savedPath = loadState().resume.path;
-        if (savedPath) {
-          const idx = list.findIndex((t) => t.path === savedPath);
-          if (idx >= 0) setCurrentIndex(idx);
+        // resume index from saved path; if file was renamed/deleted, reset.
+        const saved = loadState().resume;
+        if (saved.path) {
+          const idx = list.findIndex((t) => t.path === saved.path);
+          if (idx >= 0) {
+            setCurrentIndex(idx);
+          } else {
+            // Saved track no longer exists — clear stale resume so playback
+            // starts fresh from the beginning of the first available track.
+            setState((s) => ({ ...s, resume: { path: null, time: 0 } }));
+            setCurrentIndex(0);
+          }
         }
       } finally {
         setLoading(false);

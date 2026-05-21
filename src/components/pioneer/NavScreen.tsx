@@ -1,5 +1,14 @@
-import { useState } from "react";
-import { Navigation, MapPin, Search, Home, Briefcase, ExternalLink } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  Navigation,
+  MapPin,
+  Search,
+  Home,
+  Briefcase,
+  ExternalLink,
+  Clock,
+  X,
+} from "lucide-react";
 
 type Preset = { label: string; query?: string; ll?: string; icon: React.ComponentType<{ className?: string }> };
 
@@ -35,17 +44,73 @@ function openWaze(url: string) {
   a.remove();
 }
 
+const RECENTS_KEY = "pioneer-waze-recents-v1";
+const MAX_RECENTS = 10;
+
+function loadRecents(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(RECENTS_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecents(list: string[]) {
+  try {
+    localStorage.setItem(RECENTS_KEY, JSON.stringify(list.slice(0, MAX_RECENTS)));
+  } catch {
+    /* storage full or disabled */
+  }
+}
+
 export function NavScreen() {
   const [q, setQ] = useState("");
+  const [recents, setRecents] = useState<string[]>([]);
+  const [showRecents, setShowRecents] = useState(false);
+
+  useEffect(() => {
+    setRecents(loadRecents());
+  }, []);
+
+  const remember = (query: string) => {
+    const next = [query, ...recents.filter((r) => r.toLowerCase() !== query.toLowerCase())].slice(
+      0,
+      MAX_RECENTS
+    );
+    setRecents(next);
+    saveRecents(next);
+  };
+
+  const clearRecents = () => {
+    setRecents([]);
+    saveRecents([]);
+  };
+
+  const removeRecent = (query: string) => {
+    const next = recents.filter((r) => r !== query);
+    setRecents(next);
+    saveRecents(next);
+  };
 
   const go = (preset: Preset) => {
-    const url = wazeUrl({ q: preset.query ?? preset.label, navigate: true });
+    const query = preset.query ?? preset.label;
+    remember(query);
+    const url = wazeUrl({ q: query, navigate: true });
     openWaze(url);
   };
 
   const search = () => {
-    if (!q.trim()) return;
-    openWaze(wazeUrl({ q: q.trim(), navigate: true }));
+    const query = q.trim();
+    if (!query) return;
+    remember(query);
+    openWaze(wazeUrl({ q: query, navigate: true }));
+  };
+
+  const openRecent = (query: string) => {
+    remember(query);
+    openWaze(wazeUrl({ q: query, navigate: true }));
   };
 
   return (
@@ -55,10 +120,77 @@ export function NavScreen() {
           <Navigation className="h-4 w-4" />
           <span className="text-xs font-semibold uppercase tracking-widest">Waze Navigation</span>
         </div>
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-          Music keeps playing
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowRecents((v) => !v)}
+            className={`flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[10px] font-semibold uppercase tracking-widest ${
+              showRecents ? "border-primary text-primary" : "text-muted-foreground"
+            }`}
+            title="View recent Waze searches"
+          >
+            <Clock className="h-3 w-3" /> Recent
+            {recents.length > 0 && (
+              <span className="ml-1 rounded-full bg-primary/20 px-1.5 text-primary">
+                {recents.length}
+              </span>
+            )}
+          </button>
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            Music keeps playing
+          </span>
+        </div>
       </div>
+
+      {showRecents && (
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-primary">
+              <Clock className="h-4 w-4" />
+              <span className="text-xs font-semibold uppercase tracking-widest">
+                Recent Waze searches
+              </span>
+            </div>
+            {recents.length > 0 && (
+              <button
+                onClick={clearRecents}
+                className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-primary"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
+          {recents.length === 0 ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              No recent searches yet. Anything you search or quick-launch here will
+              appear in this list and re-open in Waze on tap.
+            </p>
+          ) : (
+            <ul className="mt-3 grid gap-2">
+              {recents.map((r) => (
+                <li
+                  key={r}
+                  className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2"
+                >
+                  <button
+                    onClick={() => openRecent(r)}
+                    className="flex flex-1 items-center gap-2 text-left text-sm text-foreground hover:text-primary"
+                  >
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="truncate">{r}</span>
+                  </button>
+                  <button
+                    onClick={() => removeRecent(r)}
+                    className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    title="Remove"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <div className="rounded-2xl border border-border bg-card p-5">
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
