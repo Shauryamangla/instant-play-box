@@ -8,6 +8,7 @@ import { PlayerScreen } from "@/components/pioneer/PlayerScreen";
 import { SettingsScreen } from "@/components/pioneer/SettingsScreen";
 import { NavScreen } from "@/components/pioneer/NavScreen";
 import { LibraryScreen } from "@/components/pioneer/LibraryScreen";
+import { MusicScreen } from "@/components/pioneer/MusicScreen";
 import { PersistentVideo } from "@/components/pioneer/PersistentVideo";
 import type { Screen } from "@/components/pioneer/screens";
 
@@ -55,7 +56,7 @@ function Shell() {
       <main className="min-h-0 flex-1">
         {screen === "home" && <HomeScreen onOpen={setScreen} />}
         {screen === "video" && <PlayerScreen />}
-        {screen === "music" && <LibraryScreen onOpen={setScreen} />}
+        {screen === "music" && <MusicScreen onOpen={setScreen} />}
         {screen === "audio" && <SettingsScreen initialTab="audio" />}
         {screen === "settings" && <SettingsScreen initialTab="system" />}
         {screen === "nav" && <NavScreen />}
