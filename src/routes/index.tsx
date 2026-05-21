@@ -7,7 +7,6 @@ import { HomeScreen } from "@/components/pioneer/HomeScreen";
 import { PlayerScreen } from "@/components/pioneer/PlayerScreen";
 import { SettingsScreen } from "@/components/pioneer/SettingsScreen";
 import { NavScreen } from "@/components/pioneer/NavScreen";
-import { LibraryScreen } from "@/components/pioneer/LibraryScreen";
 import { MusicScreen } from "@/components/pioneer/MusicScreen";
 import { PersistentVideo } from "@/components/pioneer/PersistentVideo";
 import type { Screen } from "@/components/pioneer/screens";
