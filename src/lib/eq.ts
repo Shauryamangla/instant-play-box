@@ -8,7 +8,8 @@ export interface EqGraph {
   source: MediaElementAudioSourceNode;
   filters: BiquadFilterNode[];
   balance: StereoPannerNode;
-  sub: BiquadFilterNode; // low-pass for sub crossover
+  sub: BiquadFilterNode; // parallel low-pass for subwoofer branch
+  subGain: GainNode; // 0 when sub off, subLevel when on
   gain: GainNode;
 }
 
@@ -27,22 +28,31 @@ export function attachEq(media: HTMLMediaElement): EqGraph {
     f.gain.value = 0;
     return f;
   });
+  // Parallel subwoofer branch: a dedicated low-pass + gain that sums into the
+  // main output. Toggling subwoofer OFF silences this branch (gain=0) without
+  // touching the main full-range signal — turning the subwoofer on adds bass,
+  // turning it off removes it (no more "everything becomes a woofer" bug).
   const sub = ctx.createBiquadFilter();
-  sub.type = "allpass"; // disabled by default; switched to lowpass when sub on
+  sub.type = "lowpass";
   sub.frequency.value = 80;
+  const subGain = ctx.createGain();
+  subGain.gain.value = 0; // sub disabled by default
   const balance = ctx.createStereoPanner();
   const gain = ctx.createGain();
-  // chain: source -> filters... -> sub -> balance -> gain -> destination
+  // Main chain: source -> filters... -> balance -> gain -> destination
   let node: AudioNode = source;
   for (const f of filters) {
     node.connect(f);
     node = f;
   }
-  node.connect(sub);
-  sub.connect(balance);
+  node.connect(balance);
   balance.connect(gain);
   gain.connect(ctx.destination);
-  const graph: EqGraph = { ctx, source, filters, balance, sub, gain };
+  // Parallel sub tap (taken after EQ, before balance) summed into output.
+  node.connect(sub);
+  sub.connect(subGain);
+  subGain.connect(gain);
+  const graph: EqGraph = { ctx, source, filters, balance, sub, subGain, gain };
   cache.set(media, graph);
   return graph;
 }

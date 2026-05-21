@@ -56,19 +56,23 @@ export async function ensurePermission(handle: FileSystemDirectoryHandle) {
 }
 
 const VIDEO_EXT = /\.(mp4|m4v|mkv|webm|mov|avi|3gp|ogv)$/i;
+const AUDIO_EXT = /\.(mp3|m4a|aac|wav|flac|ogg|oga|opus|wma)$/i;
+
+export type MediaKind = "video" | "audio";
 
 export async function listVideoFiles(
   handle: FileSystemDirectoryHandle,
   recursive = true,
   prefix = ""
-): Promise<{ name: string; path: string; file: File }[]> {
-  const out: { name: string; path: string; file: File }[] = [];
+): Promise<{ name: string; path: string; file: File; kind: MediaKind }[]> {
+  const out: { name: string; path: string; file: File; kind: MediaKind }[] = [];
   const entries = (handle as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries();
   for await (const [name, entry] of entries) {
     const path = prefix ? `${prefix}/${name}` : name;
-    if (entry.kind === "file" && VIDEO_EXT.test(name)) {
+    if (entry.kind === "file" && (VIDEO_EXT.test(name) || AUDIO_EXT.test(name))) {
       const file = await (entry as FileSystemFileHandle).getFile();
-      out.push({ name, path, file });
+      const kind: MediaKind = AUDIO_EXT.test(name) ? "audio" : "video";
+      out.push({ name, path, file, kind });
     } else if (entry.kind === "directory" && recursive) {
       const nested = await listVideoFiles(entry as FileSystemDirectoryHandle, true, path);
       out.push(...nested);
