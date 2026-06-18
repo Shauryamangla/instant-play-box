@@ -93,9 +93,35 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "manifest", href: "/manifest.json" },
       { rel: "icon", href: "/icon-192.png", type: "image/png" },
       { rel: "apple-touch-icon", href: "/icon-192.png" },
+    ],
+    scripts: [
+      {
+        children: `
+if ('serviceWorker' in navigator) {
+  var h = location.hostname;
+  var inIframe = window.self !== window.top;
+  var isPreview =
+    h.startsWith('id-preview--') ||
+    h.startsWith('preview--') ||
+    h === 'lovableproject.com' || h.endsWith('.lovableproject.com') ||
+    h === 'lovableproject-dev.com' || h.endsWith('.lovableproject-dev.com') ||
+    h === 'beta.lovable.dev' || h.endsWith('.beta.lovable.dev');
+  var killed = location.search.indexOf('sw=off') !== -1;
+  if (inIframe || isPreview || killed) {
+    navigator.serviceWorker.getRegistrations().then(function(rs){
+      rs.forEach(function(r){ if (r.active && r.active.scriptURL.indexOf('/sw.js') !== -1) r.unregister(); });
+    });
+  } else {
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('/sw.js').catch(function(e){ console.warn('SW register failed', e); });
+    });
+  }
+}
+`,
+      },
     ],
   }),
   shellComponent: RootShell,
